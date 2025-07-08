@@ -17,8 +17,8 @@ pipeline{
             steps{
                 echo 'Setting up our Virtual Environment and Installing dependencies'
                 sh '''
-                python -m venv $(VENV_DIR)
-                . $(VENV_DIR)/bin/activate
+                python -m venv $VENV_DIR
+                . $VENV_DIR/bin/activate
                 pip install --update pip
                 pip install -e .
 
