@@ -27,7 +27,7 @@ RUN pip install --no-cache-dir -e .
 RUN python pipeline/training_pipeline.py
 
 # Expose the port used by the app
-EXPOSE 5000
+EXPOSE 8080
 
 # Run the app
 CMD ["python", "application.py"]
