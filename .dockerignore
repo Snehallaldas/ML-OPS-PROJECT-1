@@ -1,0 +1,16 @@
+# Development artifacts
+venv/
+mlruns/
+logs/
+*.egg-info/
+.egg-info/
+
+# System/IDE files
+.DS_Store
+.idea/
+.vscode/
+
+# Test/CI artifacts
+.coverage
+htmlcov/
+.pytest_cache/

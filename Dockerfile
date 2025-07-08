@@ -1,30 +1,47 @@
-# Use a lightweight Python image
-FROM python:slim
+# Stage 1: Builder (install dependencies + train model)
+FROM python:3.9 as builder
 
-# Set environment variables to prevent Python from writing .pyc files & Ensure Python output is not buffered
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
-
-# Set the working directory
 WORKDIR /app
 
-# Install system dependencies required by LightGBM
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgomp1 \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    libgomp1 && \
+    rm -rf /var/lib/apt/lists/*
 
-# Copy the application code
-COPY . .
+# Create virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
-# Install the package in editable mode
+# Install Python dependencies
+COPY pyproject.toml setup.py .
 RUN pip install --no-cache-dir -e .
 
-# Train the model before running the application
+# Copy and run training (only if needed)
+COPY pipeline/training_pipeline.py .
+COPY data/processed/ ./data/processed/
 RUN python pipeline/training_pipeline.py
 
-# Expose the port that Flask will run on
-EXPOSE 5000
+# Stage 2: Runtime (slim production image)
+FROM python:3.9-slim
 
-# Command to run the app
+WORKDIR /app
+
+# Copy only necessary artifacts
+COPY --from=builder /opt/venv /opt/venv
+COPY --from=builder /app/models ./models
+COPY --from=builder /app/data/processed ./data/processed
+
+# Copy application code
+COPY src/ ./src/
+COPY application.py .
+
+# Runtime environment
+ENV PATH="/opt/venv/bin:$PATH" \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+EXPOSE 5000
 CMD ["python", "application.py"]
