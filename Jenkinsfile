@@ -3,8 +3,8 @@ pipeline{
 
     environment {
         VENV_DIR = 'venv'
-        GCP_PROJECT="mlops-new-464503"
-        GCLOUD_PATH = "var/jenkins_home/google-cloud-sdk/bin"
+        GCP_PROJECT='mlops-new-464503'
+        GCLOUD_PATH = 'var/jenkins_home/google-cloud-sdk/bin'
     }
 
     stages{
