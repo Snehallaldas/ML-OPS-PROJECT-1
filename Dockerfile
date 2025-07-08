@@ -1,36 +1,30 @@
-FROM python:3.10-slim
+# Use a lightweight Python image
+FROM python:slim
 
-# Add SSL configuration to fix pip installation issues
+# Set environment variables to prevent Python from writing .pyc files & Ensure Python output is not buffered
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PYTHONHTTPSVERIFY=0 \
-    CURL_CA_BUNDLE="" \
-    REQUESTS_CA_BUNDLE=""
+    PYTHONUNBUFFERED=1
 
+# Set the working directory
 WORKDIR /app
 
-# Try to install system dependencies with retry
-RUN for i in {1..3}; do \
-        apt-get update && \
-        apt-get install -y --no-install-recommends libgomp1 ca-certificates && \
-        apt-get clean && \
-        rm -rf /var/lib/apt/lists/* && \
-        break || sleep 10; \
-    done
+# Install system dependencies required by LightGBM
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Configure pip to handle SSL issues
-RUN pip config set global.trusted-host pypi.org && \
-    pip config set global.trusted-host pypi.python.org && \
-    pip config set global.trusted-host files.pythonhosted.org
-
+# Copy the application code
 COPY . .
 
-# Add retry mechanism and timeout for pip installations
-RUN pip install --no-cache-dir --upgrade pip --timeout=1000 --retries=10
-RUN pip install --no-cache-dir -e . --timeout=1000 --retries=10
+# Install the package in editable mode
+RUN pip install --no-cache-dir -e .
 
+# Train the model before running the application
 RUN python pipeline/training_pipeline.py
 
+# Expose the port that Flask will run on
 EXPOSE 5000
 
+# Command to run the app
 CMD ["python", "application.py"]
